@@ -23,15 +23,16 @@ function exchange_rates_custom_help($route_name, RouteMatchInterface $route_matc
 		case 'help.page.exchange_rates_custom':
 			$output = '';
 			$output .= '<h3>' . t('Exchange Rates and Currency Converter') . '</h3>';
-			$output .= '<p>' . t('You should get an API Key from ') . '<a href="https://fixer.io" target="_blank">fixer.io</a>';
+			$output .= '<p>' . t('1. You should get an API Key from ') . '<a href="https://fixer.io" target="_blank">fixer.io</a>';
 			$output .= t(' and put it on a ') . Link::createFromRoute(t('settings page'), 'exchange_rates_custom.settings')->toString() . '.</p>';
-			$output .= '<p>' . t('To convert value to another currency you should use:') . '</p>';
-			$output .= '<p><b>$converter = new ExchangeRatesCustomController;<br>';
-			$output .= '$result = $converter->convert($currency_value, $currency_code_1, $currency_code_2);</b></p>';
-			$output .= '<hr><p><i>' . t('Example:') . '</i></p>';
+			$output .= '<p>' . t('2. To convert value to another currency you should add this to the "use" area at the top of the file:') . '</p>';
+			$output .= '<p><b><pre>use Drupal\exchange_rates_custom\Controller\ExchangeRatesCustomController;</pre></b></p>';
+			$output .= '<p>' . t('3. And use:') . '</p>';
+			$output .= '<p><b><pre>$converter = new ExchangeRatesCustomController;</pre>';
+			$output .= '<pre>$result = $converter->convert($currency_value, $currency_code_1, $currency_code_2);</pre></b></p>';
+			$output .= '<p><i>' . t('Example:') . '</i></p>';
 			$output .= '<p>' . t('To convert 10 USD to BYN use:') . '</p>';
-			$output .= '<p><b>$converter = new ExchangeRatesCustomController;<br>';
-			$output .= '$result = $converter->convert(10, "USD", "BYN");</b></p>';
+			$output .= '<p><b><pre>$result = $converter->convert(10, "USD", "BYN");</pre></b></p><hr>';
 
 			return $output;
 
@@ -44,5 +45,12 @@ function exchange_rates_custom_help($route_name, RouteMatchInterface $route_matc
  */
 function exchange_rates_custom_cron() {
 	$data = new ExchangeRatesCustomController;
-	$data->update();
+	$api_key = $data->get_api_key();
+	if ($api_key) {
+		$module_cron_period = $data->get_module_cron_period();
+		$last_update_module_date = $data->get_last_update_module_date();
+		if ($last_update_module_date + $module_cron_period <= time()) {
+			$data->update();
+		}
+	}
 }

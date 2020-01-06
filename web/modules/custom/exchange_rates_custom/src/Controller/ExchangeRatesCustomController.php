@@ -18,8 +18,7 @@ class ExchangeRatesCustomController extends ControllerBase {
 	 * @return bool|string
 	 */
 	public function get_data_api($symbols = false) {
-		$data = new ExchangeRatesCustomController;
-		$api_key = $data->get_api_key();
+		$api_key = $this->get_api_key();
 
 		$symbols_url = '';
 		if ($symbols) {
@@ -32,7 +31,7 @@ class ExchangeRatesCustomController extends ControllerBase {
 		curl_setopt($c, CURLOPT_RETURNTRANSFER, 1);
 		$output = curl_exec($c);
 		curl_close($c);
-		
+
 		return $output;
 	}
 
@@ -43,8 +42,7 @@ class ExchangeRatesCustomController extends ControllerBase {
 	 * @return string
 	 */
 	public function get_currency_list() {
-		$data = new ExchangeRatesCustomController;
-		$data_api = json_decode($data->get_data_api());
+		$data_api = json_decode($this->get_data_api());
 		$rates = $data_api->rates;
 		$string = '';
 		foreach ($rates as $key => $rate) {
@@ -137,12 +135,28 @@ class ExchangeRatesCustomController extends ControllerBase {
 	 *
 	 * @return mixed
 	 */
-	public function get_last_updated_date() {
+	public function get_last_update_date() {
 		// Connect to DB.
 		$query = Database::getConnection();
 		$result = $query->select('custom_exchange_rates_settings', 'cers')
 			->fields('cers', ['value'])
-			->condition('cers.setting', 'last_updated')
+			->condition('cers.setting', 'last_update')
+			->execute()
+			->fetchField();
+		return $result;
+	}
+
+	/**
+	 * Get module cron period.
+	 *
+	 * @return mixed
+	 */
+	public function get_last_update_module_date() {
+		// Connect to DB.
+		$query = Database::getConnection();
+		$result = $query->select('custom_exchange_rates_settings', 'cers')
+			->fields('cers', ['value'])
+			->condition('cers.setting', 'last_update_module')
 			->execute()
 			->fetchField();
 		return $result;
@@ -180,11 +194,10 @@ class ExchangeRatesCustomController extends ControllerBase {
 	 * @throws
 	 */
 	public function update() {
-		$data = new ExchangeRatesCustomController;
-		$api_key = $data->get_api_key();
+		$api_key = $this->get_api_key();
 		if ($api_key) {
-			$currency_list = $data->clear_currency_list($data->get_saved_currency_list());
-			$data_api = json_decode($data->get_data_api($currency_list));
+			$currency_list = $this->clear_currency_list($this->get_saved_currency_list());
+			$data_api = json_decode($this->get_data_api($currency_list));
 			$values_api = [];
 			$rates = $data_api->rates;
 			foreach ($rates as $key => $rate) {
@@ -194,6 +207,9 @@ class ExchangeRatesCustomController extends ControllerBase {
 				];
 				$values_api_codes[] = $key;
 			}
+
+			// This time timestamp
+			$timestamp_now = time();
 
 			// Work with DB.
 			$query = Database::getConnection();
@@ -210,13 +226,23 @@ class ExchangeRatesCustomController extends ControllerBase {
 				->execute();
 			$query->merge('custom_exchange_rates_settings')
 				->insertFields(array(
-					'setting' => 'last_updated',
+					'setting' => 'last_update',
 					'value' => $data_api->timestamp,
 				))
 				->updateFields(array(
 					'value' => $data_api->timestamp,
 				))
-				->key('setting', 'last_updated')
+				->key('setting', 'last_update')
+				->execute();
+			$query->merge('custom_exchange_rates_settings')
+				->insertFields(array(
+					'setting' => 'last_update_module',
+					'value' => $timestamp_now,
+				))
+				->updateFields(array(
+					'value' => $timestamp_now,
+				))
+				->key('setting', 'last_update_module')
 				->execute();
 			foreach ($values_api as $record) {
 				$query->merge('custom_exchange_rates')
@@ -234,5 +260,32 @@ class ExchangeRatesCustomController extends ControllerBase {
 		} else {
 			return false;
 		}
+	}
+
+	/**
+	 * Get cron period from Drupal settings.
+	 *
+	 * @return array|mixed|null
+	 */
+	public function get_drupal_cron_period() {
+		$cron_period = $this->config('automated_cron.settings')
+			->get('interval');
+		return $cron_period;
+	}
+
+	/**
+	 * Get module cron period.
+	 *
+	 * @return mixed
+	 */
+	public function get_module_cron_period() {
+		// Connect to DB.
+		$query = Database::getConnection();
+		$result = $query->select('custom_exchange_rates_settings', 'cers')
+			->fields('cers', ['value'])
+			->condition('cers.setting', 'module_cron_period')
+			->execute()
+			->fetchField();
+		return $result;
 	}
 }

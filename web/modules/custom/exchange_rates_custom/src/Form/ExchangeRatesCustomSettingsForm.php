@@ -37,6 +37,8 @@ class ExchangeRatesCustomSettingsForm extends ConfigFormBase {
 		$data = new ExchangeRatesCustomController;
 		$currency_codes = $data->get_saved_currency_list();
 		$api_key = $data->get_api_key();
+		$drupal_cron_period = $data->get_drupal_cron_period();
+		$module_cron_period = $data->get_module_cron_period();
 
 		$form['api_key'] = [
 			'#type' => 'textfield',
@@ -46,12 +48,16 @@ class ExchangeRatesCustomSettingsForm extends ConfigFormBase {
 			'#default_value' => $api_key,
 		];
 
-		$form['get_list_description'] = [
+		$form['get_list'] = [
+			'#type' => 'container',
+		];
+
+		$form['get_list']['description'] = [
 			'#type' => 'item',
 			'#markup' => $this->t('Get a list of available currency codes:'),
 		];
 
-		$form['get_list'] = array(
+		$form['get_list']['button'] = array(
 			'#type' => 'button',
 			'#value' => $this->t('Get list'),
 			'#executes_submit_callback' => FALSE,
@@ -69,7 +75,7 @@ class ExchangeRatesCustomSettingsForm extends ConfigFormBase {
 			)
 		);
 
-		$form['get_list_result'] = [
+		$form['get_list']['result'] = [
 			'#type' => 'item',
 			'#markup' => '',
 			'#prefix' => '<div id="currency_list">',
@@ -82,6 +88,23 @@ class ExchangeRatesCustomSettingsForm extends ConfigFormBase {
 			'#description' => $this->t('Enter a currency codes here. Only this currencies will be saved in database and be available for converting! You must separate it with a comma ",". Example: "USD, BYN, RUB".'),
 			'#required' => TRUE,
 			'#default_value' => $currency_codes,
+		];
+
+		$form['cron'] = [
+			'#type' => 'container',
+		];
+
+		$form['cron']['drupal_period'] = [
+			'#type' => 'item',
+			'#markup' => $this->t('Drupal cron period: ') . '<b>' . $drupal_cron_period . ' ' . t('seconds') . '</b>',
+		];
+
+		$form['cron']['module_period'] = [
+			'#type' => 'textfield',
+			'#title' => $this->t('Module cron period'),
+			'#description' => $this->t('Enter a period in seconds for automatically currency updating. Example: set "86400" for updating values once per day. Set "0" to leave it the same as Drupal cron period.'),
+			'#required' => TRUE,
+			'#default_value' => $module_cron_period ? $module_cron_period : 0,
 		];
 
 		$form['actions'] = [
@@ -162,6 +185,12 @@ class ExchangeRatesCustomSettingsForm extends ConfigFormBase {
 			$values_api_codes[] = $key;
 		}
 
+		// This time timestamp
+		$timestamp_now = time();
+
+		// Module cron period
+		$module_cron_period = preg_replace("/[^0-9]/", '', $form_state->getValue('module_period'));
+
 		// Get currency list from DB in array.
 		$data_db = $data->clear_currency_list($data->get_saved_currency_list());
 		$values_db = explode(',', $data_db);
@@ -187,13 +216,33 @@ class ExchangeRatesCustomSettingsForm extends ConfigFormBase {
 			->execute();
 		$query->merge('custom_exchange_rates_settings')
 			->insertFields(array(
-				'setting' => 'last_updated',
+				'setting' => 'last_update',
 				'value' => $timestamp,
 			))
 			->updateFields(array(
 				'value' => $timestamp,
 			))
-			->key('setting', 'last_updated')
+			->key('setting', 'last_update')
+			->execute();
+		$query->merge('custom_exchange_rates_settings')
+			->insertFields(array(
+				'setting' => 'last_update_module',
+				'value' => $timestamp_now,
+			))
+			->updateFields(array(
+				'value' => $timestamp_now,
+			))
+			->key('setting', 'last_update_module')
+			->execute();
+		$query->merge('custom_exchange_rates_settings')
+			->insertFields(array(
+				'setting' => 'module_cron_period',
+				'value' => $module_cron_period,
+			))
+			->updateFields(array(
+				'value' => $module_cron_period,
+			))
+			->key('setting', 'module_cron_period')
 			->execute();
 		foreach ($values_api as $record) {
 			$query->merge('custom_exchange_rates')
@@ -219,6 +268,7 @@ class ExchangeRatesCustomSettingsForm extends ConfigFormBase {
 	 */
 	public function validateForm(array &$form, FormStateInterface $form_state) {
 		$data = new ExchangeRatesCustomController;
+		$drupal_cron_period = $data->get_drupal_cron_period();
 
 		$api_key = $form_state->getValue('api_key');
 		if (strlen($api_key) != 32) {
@@ -228,6 +278,11 @@ class ExchangeRatesCustomSettingsForm extends ConfigFormBase {
 		$currency_codes = $data->clear_currency_list($form_state->getValue('currency_codes'));
 		if ($currency_codes == '') {
 			$form_state->setErrorByName('currency_codes', $this->t('Currency codes field can\'t be empty.'));
+		}
+
+		$module_cron_period = preg_replace("/[^0-9]/", '', $form_state->getValue('module_period'));
+		if ($module_cron_period < $drupal_cron_period && $module_cron_period != 0) {
+			$form_state->setErrorByName('cron', $this->t('Module cron period should be more then Drupal cron period or 0.'));
 		}
 	}
 }

@@ -43,11 +43,22 @@ class ExchangeRatesCustomListForm extends ConfigFormBase {
 		$currency_rates_array = json_decode(json_encode($currency_rates), true);
 
 		$base_currency = $data->get_base_currency();
-		$last_updated = $data->get_last_updated_date();
+		$last_update = $data->get_last_update_date();
+		$last_update_module = $data->get_last_update_module_date();
 
-		$form['last_updated'] = [
+		$form['last_update'] = [
 			'#type' => 'item',
-			'#markup' => $this->t('Exchange rate date: ') . '<b>' . date('d.m.Y', $last_updated) . '</b>',
+			'#markup' => $this->t('Update date (from API): ') . '<b>' . date('d.m.Y H:i', $last_update) . '</b>',
+		];
+
+		$form['last_update_module'] = [
+			'#type' => 'item',
+			'#markup' => $this->t('Last module update: ') . '<b>' . date('d.m.Y H:i', $last_update_module) . '</b>',
+		];
+
+		$form['now_date'] = [
+			'#type' => 'item',
+			'#markup' => $this->t('Now date: ') . '<b>' . date('d.m.Y H:i', time()) . '</b>',
 		];
 
 		$form['base_currency'] = [
