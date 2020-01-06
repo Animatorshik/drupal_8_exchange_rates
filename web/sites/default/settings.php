@@ -751,18 +751,20 @@ $settings['entity_update_backup'] = TRUE;
  *
  * Keep this code block at the end of this file to take full effect.
  */
-#
-if (file_exists($app_root . '/' . $site_path . '/settings.local.php')) {
-  include $app_root . '/' . $site_path . '/settings.local.php';
+
+if (getenv('DEV_MODE')) {
+	if (file_exists($app_root . '/' . $site_path . '/settings.local.php')) {
+		include $app_root . '/' . $site_path . '/settings.local.php';
+	}
 }
 $settings['config_sync_directory'] = '../config/sync';
 $databases['default']['default'] = array (
-  'database' => 'drupal8',
-  'username' => 'root',
-  'password' => 'secretpass',
+  'database' => getenv('MYSQL_DATABASE'),
+  'username' => getenv('MYSQL_USER'),
+  'password' => getenv('MYSQL_PASSWORD'),
   'prefix' => '',
-  'host' => '127.0.0.1',
-  'port' => '3306',
+  'host' => getenv('MYSQL_HOSTNAME'),
+  'port' => getenv('MYSQL_PORT'),
   'namespace' => 'Drupal\\Core\\Database\\Driver\\mysql',
   'driver' => 'mysql',
 );

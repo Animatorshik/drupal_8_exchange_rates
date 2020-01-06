@@ -1,0 +1,22 @@
+exchange_rates_custom.settings:
+  path: '/admin/config/regional/exchange-rates-custom'
+  defaults:
+    _form: '\Drupal\exchange_rates_custom\Form\ExchangeRatesCustomSettingsForm'
+    _title: 'Exchange Rates Settings'
+  requirements:
+    _permission: 'administer'
+
+exchange_rates_custom.list:
+  path: '/admin/config/regional/exchange-rates-custom/list'
+  defaults:
+    _form: '\Drupal\exchange_rates_custom\Form\ExchangeRatesCustomListForm'
+    _title: 'Exchange Rates'
+  requirements:
+    _permission: 'administer'
+
+exchange_rates_custom.get_currency_list:
+  path: '/admin/config/regional/exchange-rates-custom/get_currency_list'
+  defaults:
+    _controller: '\Drupal\exchange_rates_custom\Controller\ExchangeRatesCustomController::get_currency_list'
+  requirements:
+    _permission: 'administer'

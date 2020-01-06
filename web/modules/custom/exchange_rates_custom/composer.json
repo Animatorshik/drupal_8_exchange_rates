@@ -1,0 +1,13 @@
+{
+    "name": "exchange_rates_custom",
+    "type": "drupal-module",
+    "description": "Exchange Rates and Currency Converter",
+    "keywords": [
+    ],
+    "homepage": "https://www.drupal.org/project/exchange_rates_custom",
+    "minimum-stability": "dev",
+    "support": {
+        "issues": "https://www.drupal.org/project/issues/exchange_rates_custom",
+        "source": "http://cgit.drupalcode.org/exchange_rates_custom",
+    },
+}

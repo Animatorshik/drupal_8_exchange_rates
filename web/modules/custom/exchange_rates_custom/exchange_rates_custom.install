@@ -1,0 +1,55 @@
+<?php
+
+/**
+ * Implements hook_schema().
+ *
+ * Defines the database tables used by this module.
+ *
+ * @see hook_schema()
+ *
+ * @ingroup exchange_rates_custom
+ */
+function exchange_rates_custom_schema() {
+	$schema['custom_exchange_rates'] = [
+		'description' => 'Exchange Rates.',
+		'fields' => [
+			'code' => [
+				'type' => 'varchar',
+				'not null' => TRUE,
+				'length' => 3,
+				'default' => '',
+				'description' => 'Currency code.',
+			],
+			'value' => [
+				'type' => 'numeric',
+				'precision' => 20,
+				'scale' => 6,
+				'not null' => TRUE,
+				'default' => 0,
+				'description' => 'Currency value.',
+			],
+		],
+		'primary key' => ['code'],
+	];
+	$schema['custom_exchange_rates_settings'] = [
+		'description' => 'Exchange Rates Settings.',
+		'fields' => [
+			'setting' => [
+				'type' => 'varchar',
+				'not null' => TRUE,
+				'length' => 255,
+				'default' => '',
+				'description' => 'Setting key.',
+			],
+			'value' => [
+				'type' => 'varchar',
+				'not null' => TRUE,
+				'length' => 255,
+				'default' => '',
+				'description' => 'Setting value.',
+			],
+		],
+		'primary key' => ['setting'],
+	];
+	return $schema;
+}

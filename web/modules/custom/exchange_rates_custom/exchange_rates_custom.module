@@ -1,0 +1,48 @@
+<?php
+
+/**
+ * @file
+ * Contains exchange_rates_custom.module.
+ */
+
+use Drupal\Core\Routing\RouteMatchInterface;
+use Drupal\Core\Link;
+use Drupal\exchange_rates_custom\Controller\ExchangeRatesCustomController;
+
+/**
+ * Implements hook_help().
+ *
+ * @param $route_name
+ * @param \Drupal\Core\Routing\RouteMatchInterface $route_match
+ *
+ * @return string
+ */
+function exchange_rates_custom_help($route_name, RouteMatchInterface $route_match) {
+	switch ($route_name) {
+		// Main module help for the exchange_rates_custom module.
+		case 'help.page.exchange_rates_custom':
+			$output = '';
+			$output .= '<h3>' . t('Exchange Rates and Currency Converter') . '</h3>';
+			$output .= '<p>' . t('You should get an API Key from ') . '<a href="https://fixer.io" target="_blank">fixer.io</a>';
+			$output .= t(' and put it on a ') . Link::createFromRoute(t('settings page'), 'exchange_rates_custom.settings')->toString() . '.</p>';
+			$output .= '<p>' . t('To convert value to another currency you should use:') . '</p>';
+			$output .= '<p><b>$converter = new ExchangeRatesCustomController;<br>';
+			$output .= '$result = $converter->convert($currency_value, $currency_code_1, $currency_code_2);</b></p>';
+			$output .= '<hr><p><i>' . t('Example:') . '</i></p>';
+			$output .= '<p>' . t('To convert 10 USD to BYN use:') . '</p>';
+			$output .= '<p><b>$converter = new ExchangeRatesCustomController;<br>';
+			$output .= '$result = $converter->convert(10, "USD", "BYN");</b></p>';
+
+			return $output;
+
+		default:
+	}
+}
+
+/**
+ * Implements hook_cron().
+ */
+function exchange_rates_custom_cron() {
+	$data = new ExchangeRatesCustomController;
+	$data->update();
+}

@@ -1,0 +1,5 @@
+exchange_rates_custom.settings:
+  title: 'Exchange Rates Custom'
+  route_name: exchange_rates_custom.settings
+  description: 'Exchange Rates Custom settings'
+  parent: system.admin_config_regional

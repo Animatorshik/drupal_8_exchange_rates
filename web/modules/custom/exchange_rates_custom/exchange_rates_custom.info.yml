@@ -1,0 +1,6 @@
+name: 'Exchange Rates Custom'
+type: module
+description: 'Exchange Rates and Currency Converter'
+core: 8.x
+package: 'Custom'
+configure: exchange_rates_custom.settings

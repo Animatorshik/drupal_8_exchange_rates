@@ -1,0 +1,9 @@
+exchange_rates_custom.settings:
+  title: 'Settings'
+  route_name: exchange_rates_custom.settings
+  base_route: exchange_rates_custom.settings
+
+exchange_rates_custom.list:
+  title: 'Rates list'
+  route_name: exchange_rates_custom.list
+  base_route: exchange_rates_custom.settings
