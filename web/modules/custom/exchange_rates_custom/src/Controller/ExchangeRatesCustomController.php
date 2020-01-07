@@ -88,7 +88,6 @@ class ExchangeRatesCustomController extends ControllerBase {
 	 * @return string
 	 */
 	public function get_saved_currency_list() {
-		// Connect to DB.
 		$query = Database::getConnection();
 		$currency = $query->select('custom_exchange_rates', 'cer')
 			->fields('cer', ['code'])
@@ -104,7 +103,6 @@ class ExchangeRatesCustomController extends ControllerBase {
 	 * @return mixed
 	 */
 	public function get_api_key() {
-		// Connect to DB.
 		$query = Database::getConnection();
 		$result = $query->select('custom_exchange_rates_settings', 'cers')
 			->fields('cers', ['value'])
@@ -120,7 +118,6 @@ class ExchangeRatesCustomController extends ControllerBase {
 	 * @return mixed
 	 */
 	public function get_base_currency() {
-		// Connect to DB.
 		$query = Database::getConnection();
 		$result = $query->select('custom_exchange_rates_settings', 'cers')
 			->fields('cers', ['value'])
@@ -136,7 +133,6 @@ class ExchangeRatesCustomController extends ControllerBase {
 	 * @return mixed
 	 */
 	public function get_last_update_date() {
-		// Connect to DB.
 		$query = Database::getConnection();
 		$result = $query->select('custom_exchange_rates_settings', 'cers')
 			->fields('cers', ['value'])
@@ -152,7 +148,6 @@ class ExchangeRatesCustomController extends ControllerBase {
 	 * @return mixed
 	 */
 	public function get_last_update_module_date() {
-		// Connect to DB.
 		$query = Database::getConnection();
 		$result = $query->select('custom_exchange_rates_settings', 'cers')
 			->fields('cers', ['value'])
@@ -196,24 +191,17 @@ class ExchangeRatesCustomController extends ControllerBase {
 	public function update() {
 		$api_key = $this->get_api_key();
 		if ($api_key) {
+			// Update rates from API.
 			$currency_list = $this->clear_currency_list($this->get_saved_currency_list());
 			$data_api = json_decode($this->get_data_api($currency_list));
-			$values_api = [];
 			$rates = $data_api->rates;
-			foreach ($rates as $key => $rate) {
-				$values_api[] = [
-					'code' => $key,
-					'value' => $rate,
-				];
-				$values_api_codes[] = $key;
-			}
 
-			// This time timestamp
+			// This time timestamp.
 			$timestamp_now = time();
 
-			// Work with DB.
+			// Update data in DB.
 			$query = Database::getConnection();
-			// Insert data in DB.
+			// Update base currency.
 			$query->merge('custom_exchange_rates_settings')
 				->insertFields(array(
 					'setting' => 'base_currency',
@@ -224,6 +212,7 @@ class ExchangeRatesCustomController extends ControllerBase {
 				))
 				->key('setting', 'base_currency')
 				->execute();
+			// Update date of rates actuality.
 			$query->merge('custom_exchange_rates_settings')
 				->insertFields(array(
 					'setting' => 'last_update',
@@ -234,6 +223,7 @@ class ExchangeRatesCustomController extends ControllerBase {
 				))
 				->key('setting', 'last_update')
 				->execute();
+			// Update module updating date.
 			$query->merge('custom_exchange_rates_settings')
 				->insertFields(array(
 					'setting' => 'last_update_module',
@@ -244,16 +234,17 @@ class ExchangeRatesCustomController extends ControllerBase {
 				))
 				->key('setting', 'last_update_module')
 				->execute();
-			foreach ($values_api as $record) {
+			// Update rates.
+			foreach ($rates as $code => $rate) {
 				$query->merge('custom_exchange_rates')
 					->insertFields(array(
-						'code' => $record['code'],
-						'value' => $record['value'],
+						'code' => $code,
+						'value' => $rate,
 					))
 					->updateFields(array(
-						'value' => $record['value'],
+						'value' => $rate,
 					))
-					->key('code', $record['code'])
+					->key('code', $code)
 					->execute();
 			}
 			return true;
@@ -279,7 +270,6 @@ class ExchangeRatesCustomController extends ControllerBase {
 	 * @return mixed
 	 */
 	public function get_module_cron_period() {
-		// Connect to DB.
 		$query = Database::getConnection();
 		$result = $query->select('custom_exchange_rates_settings', 'cers')
 			->fields('cers', ['value'])

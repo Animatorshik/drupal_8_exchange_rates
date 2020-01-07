@@ -153,6 +153,7 @@ class ExchangeRatesCustomSettingsForm extends ConfigFormBase {
 	public function submitForm(array &$form, FormStateInterface $form_state) {
 		$api_key = $form_state->getValue('api_key');
 
+		// Connect to DB.
 		$query = Database::getConnection();
 		// Insert api_key to DB.
 		$query->merge('custom_exchange_rates_settings')
@@ -175,20 +176,15 @@ class ExchangeRatesCustomSettingsForm extends ConfigFormBase {
 		$base_currency = $data_api->base;
 		$timestamp = $data_api->timestamp;
 		$rates = $data_api->rates;
-		$values_api = [];
 		$values_api_codes = [];
-		foreach ($rates as $key => $rate) {
-			$values_api[] = [
-				'code' => $key,
-				'value' => $rate,
-			];
-			$values_api_codes[] = $key;
+		foreach ($rates as $code => $rate) {
+			$values_api_codes[] = $code;
 		}
 
-		// This time timestamp
+		// This time timestamp.
 		$timestamp_now = time();
 
-		// Module cron period
+		// Clean module cron period.
 		$module_cron_period = preg_replace("/[^0-9]/", '', $form_state->getValue('module_period'));
 
 		// Get currency list from DB in array.
@@ -203,7 +199,8 @@ class ExchangeRatesCustomSettingsForm extends ConfigFormBase {
 					->execute();
 			}
 		}
-		// Insert data to DB.
+		// Insert/Update data to DB.
+		// Insert/Update base currency.
 		$query->merge('custom_exchange_rates_settings')
 			->insertFields(array(
 				'setting' => 'base_currency',
@@ -214,6 +211,7 @@ class ExchangeRatesCustomSettingsForm extends ConfigFormBase {
 			))
 			->key('setting', 'base_currency')
 			->execute();
+		// Insert/Update date of rates actuality.
 		$query->merge('custom_exchange_rates_settings')
 			->insertFields(array(
 				'setting' => 'last_update',
@@ -224,6 +222,7 @@ class ExchangeRatesCustomSettingsForm extends ConfigFormBase {
 			))
 			->key('setting', 'last_update')
 			->execute();
+		// Insert/Update module updating date.
 		$query->merge('custom_exchange_rates_settings')
 			->insertFields(array(
 				'setting' => 'last_update_module',
@@ -234,6 +233,7 @@ class ExchangeRatesCustomSettingsForm extends ConfigFormBase {
 			))
 			->key('setting', 'last_update_module')
 			->execute();
+		// Insert/Update module updating period for cron.
 		$query->merge('custom_exchange_rates_settings')
 			->insertFields(array(
 				'setting' => 'module_cron_period',
@@ -244,18 +244,21 @@ class ExchangeRatesCustomSettingsForm extends ConfigFormBase {
 			))
 			->key('setting', 'module_cron_period')
 			->execute();
-		foreach ($values_api as $record) {
+		// Insert/Update rates.
+		foreach ($rates as $code => $rate) {
 			$query->merge('custom_exchange_rates')
 				->insertFields(array(
-					'code' => $record['code'],
-					'value' => $record['value'],
+					'code' => $code,
+					'value' => $rate,
 				))
 				->updateFields(array(
-					'value' => $record['value'],
+					'value' => $rate,
 				))
-				->key('code', $record['code'])
+				->key('code', $code)
 				->execute();
 		}
+
+		$this->messenger()->addMessage(t('Settings saved successfully!'));
 
 		// Redirect to module Settings Page
 		$url = Url::fromRoute('exchange_rates_custom.settings');
