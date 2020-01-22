@@ -31,25 +31,5 @@ function exchange_rates_custom_schema() {
 		],
 		'primary key' => ['code'],
 	];
-	$schema['custom_exchange_rates_settings'] = [
-		'description' => 'Exchange Rates Settings.',
-		'fields' => [
-			'setting' => [
-				'type' => 'varchar',
-				'not null' => TRUE,
-				'length' => 255,
-				'default' => '',
-				'description' => 'Setting key.',
-			],
-			'value' => [
-				'type' => 'varchar',
-				'not null' => TRUE,
-				'length' => 255,
-				'default' => '',
-				'description' => 'Setting value.',
-			],
-		],
-		'primary key' => ['setting'],
-	];
 	return $schema;
 }

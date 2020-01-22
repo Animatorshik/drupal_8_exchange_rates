@@ -8,6 +8,7 @@
 use Drupal\Core\Routing\RouteMatchInterface;
 use Drupal\Core\Link;
 use Drupal\exchange_rates_custom\Controller\ExchangeRatesCustomController;
+use Drupal\exchange_rates_custom\ExchangeRatesCustom;
 
 /**
  * Implements hook_help().
@@ -45,10 +46,11 @@ function exchange_rates_custom_help($route_name, RouteMatchInterface $route_matc
  */
 function exchange_rates_custom_cron() {
 	$data = new ExchangeRatesCustomController;
-	$api_key = $data->get_api_key();
+	$exc = new ExchangeRatesCustom;
+	$api_key = $exc->get_api_key();
 	if ($api_key) {
-		$module_cron_period = $data->get_module_cron_period();
-		$last_update_module_date = $data->get_last_update_module_date();
+		$module_cron_period = $exc->get_module_cron_period();
+		$last_update_module_date = $exc->get_last_update_module_date();
 		if ($last_update_module_date + $module_cron_period <= time()) {
 			$data->update();
 		}

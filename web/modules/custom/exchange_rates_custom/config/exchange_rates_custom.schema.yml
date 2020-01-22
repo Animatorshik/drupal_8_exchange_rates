@@ -1,0 +1,18 @@
+exchange_rates_custom.settings:
+  type: config_object
+  mapping:
+    api_key:
+      label: 'API key'
+      type: string
+    base_currency:
+      label: 'Base currency'
+      type: string
+    last_update:
+      label: 'Last update module for API'
+      type: integer
+    last_update_module:
+      label: 'Last update for module'
+      type: integer
+    module_cron_period:
+      label: 'Cron period for module'
+      type: integer

@@ -6,8 +6,10 @@ use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
 use Drupal\exchange_rates_custom\Controller\ExchangeRatesCustomController;
+use Drupal\exchange_rates_custom\ExchangeRatesCustom;
 
 class ExchangeRatesCustomListForm extends ConfigFormBase {
+
 	/**
 	 * {@inheritdoc}
 	 */
@@ -33,8 +35,8 @@ class ExchangeRatesCustomListForm extends ConfigFormBase {
 	 * @return array
 	 */
 	public function buildForm(array $form, FormStateInterface $form_state) {
-		$data = new ExchangeRatesCustomController;
-		$currency_rates = $data->get_currency_rates();
+		$exr = new ExchangeRatesCustom;
+		$currency_rates = $exr->get_currency_rates();
 		$table_header = [
 			'code' => t('Currency code'),
 			'value' => t('Currency value'),
@@ -42,9 +44,9 @@ class ExchangeRatesCustomListForm extends ConfigFormBase {
 		// Convert object to array.
 		$currency_rates_array = json_decode(json_encode($currency_rates), true);
 
-		$base_currency = $data->get_base_currency();
-		$last_update = $data->get_last_update_date();
-		$last_update_module = $data->get_last_update_module_date();
+		$base_currency = $exr->get_base_currency();
+		$last_update = $exr->get_last_update_date();
+		$last_update_module = $exr->get_last_update_module_date();
 
 		$form['last_update'] = [
 			'#type' => 'item',
@@ -114,8 +116,8 @@ class ExchangeRatesCustomListForm extends ConfigFormBase {
 	 * @param \Drupal\Core\Form\FormStateInterface $form_state
 	 */
 	public function validateForm(array &$form, FormStateInterface $form_state) {
-		$data = new ExchangeRatesCustomController;
-		if (!$data->get_api_key()) {
+		$exc = new ExchangeRatesCustom;
+		if (!$exc->get_api_key()) {
 			$form_state->setErrorByName('actions', $this->t('API Key should be set.'));
 		}
 	}

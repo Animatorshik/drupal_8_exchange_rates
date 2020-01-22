@@ -7,8 +7,10 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
 use Drupal\exchange_rates_custom\Controller\ExchangeRatesCustomController;
 use Drupal\Core\Database\Database;
+use Drupal\exchange_rates_custom\ExchangeRatesCustom;
 
 class ExchangeRatesCustomSettingsForm extends ConfigFormBase {
+
 	/**
 	 * {@inheritdoc}
 	 */
@@ -34,11 +36,12 @@ class ExchangeRatesCustomSettingsForm extends ConfigFormBase {
 	 * @return array
 	 */
 	public function buildForm(array $form, FormStateInterface $form_state) {
-		$data = new ExchangeRatesCustomController;
-		$currency_codes = $data->get_saved_currency_list();
-		$api_key = $data->get_api_key();
-		$drupal_cron_period = $data->get_drupal_cron_period();
-		$module_cron_period = $data->get_module_cron_period();
+		$exc = new ExchangeRatesCustom;
+		$currency_codes = $exc->get_saved_currency_list();
+		$exr = new ExchangeRatesCustom;
+		$api_key = $exr->get_api_key();
+		$drupal_cron_period = $exc->get_drupal_cron_period();
+		$module_cron_period = $exc->get_module_cron_period();
 
 		$form['api_key'] = [
 			'#type' => 'textfield',
@@ -130,16 +133,21 @@ class ExchangeRatesCustomSettingsForm extends ConfigFormBase {
 	 */
 	public function getListAjaxCallback(array &$form, FormStateInterface $form_state) {
 		$data = new ExchangeRatesCustomController;
-		$api_key = $data->get_api_key();
+		$exr = new ExchangeRatesCustom;
+		$api_key = $exr->get_api_key();
 		if (!$api_key) {
 			$api_key = $form_state->getValue('api_key');
 		}
 		if (strlen($api_key) == 32) {
+			$this->config('exchange_rates_custom.settings')
+				->set('api_key', $api_key)
+				->save();
+
 			$value = $data->get_currency_list();
 
-			$form['get_list_result']['#markup'] = '<pre>'. $value . '</pre>';
+			$form['get_list_result']['#markup'] = '<div id="currency_list"><pre>'. $value . '</pre></div>';
 		} else {
-			$form['get_list_result']['#markup'] = '<pre>'. t('API Key is wrong. The key length must be 32 characters.') . '</pre>';
+			$form['get_list_result']['#markup'] = '<div id="currency_list"><pre>'. t('API Key is wrong. The key length must be 32 characters.') . '</pre></div>';
 		}
 		return $form['get_list_result'];
 	}
@@ -151,28 +159,21 @@ class ExchangeRatesCustomSettingsForm extends ConfigFormBase {
 	 * @throws \Exception
 	 */
 	public function submitForm(array &$form, FormStateInterface $form_state) {
-		$api_key = $form_state->getValue('api_key');
-
 		// Connect to DB.
 		$query = Database::getConnection();
-		// Insert api_key to DB.
-		$query->merge('custom_exchange_rates_settings')
-			->insertFields(array(
-				'setting' => 'api_key',
-				'value' => $api_key,
-			))
-			->updateFields(array(
-				'value' => $api_key,
-			))
-			->key('setting', 'api_key')
-			->execute();
+
+		// Save api_key to DB.
+		$this->config('exchange_rates_custom.settings')
+			->set('api_key', $form_state->getValue('api_key'))
+			->save();
 
 		// Clear the Currency codes field from bad symbols.
-		$data = new ExchangeRatesCustomController;
-		$clear_string = $data->clear_currency_list($form_state->getValue('currency_codes'));
+		$exc = new ExchangeRatesCustom;
+		$clear_string = $exc->clear_currency_list($form_state->getValue('currency_codes'));
 
 		// Get currency and rates from API to array.
-		$data_api = json_decode($data->get_data_api($clear_string));
+		$exc = new ExchangeRatesCustom;
+		$data_api = json_decode($exc->get_data_from_api($clear_string));
 		$base_currency = $data_api->base;
 		$timestamp = $data_api->timestamp;
 		$rates = $data_api->rates;
@@ -188,7 +189,7 @@ class ExchangeRatesCustomSettingsForm extends ConfigFormBase {
 		$module_cron_period = preg_replace("/[^0-9]/", '', $form_state->getValue('module_period'));
 
 		// Get currency list from DB in array.
-		$data_db = $data->clear_currency_list($data->get_saved_currency_list());
+		$data_db = $exc->clear_currency_list($exc->get_saved_currency_list());
 		$values_db = explode(',', $data_db);
 
 		// Delete codes in DB if they absent in a API codes array.
@@ -199,51 +200,16 @@ class ExchangeRatesCustomSettingsForm extends ConfigFormBase {
 					->execute();
 			}
 		}
-		// Insert/Update data to DB.
-		// Insert/Update base currency.
-		$query->merge('custom_exchange_rates_settings')
-			->insertFields(array(
-				'setting' => 'base_currency',
-				'value' => $base_currency,
-			))
-			->updateFields(array(
-				'value' => $base_currency,
-			))
-			->key('setting', 'base_currency')
-			->execute();
-		// Insert/Update date of rates actuality.
-		$query->merge('custom_exchange_rates_settings')
-			->insertFields(array(
-				'setting' => 'last_update',
-				'value' => $timestamp,
-			))
-			->updateFields(array(
-				'value' => $timestamp,
-			))
-			->key('setting', 'last_update')
-			->execute();
-		// Insert/Update module updating date.
-		$query->merge('custom_exchange_rates_settings')
-			->insertFields(array(
-				'setting' => 'last_update_module',
-				'value' => $timestamp_now,
-			))
-			->updateFields(array(
-				'value' => $timestamp_now,
-			))
-			->key('setting', 'last_update_module')
-			->execute();
-		// Insert/Update module updating period for cron.
-		$query->merge('custom_exchange_rates_settings')
-			->insertFields(array(
-				'setting' => 'module_cron_period',
-				'value' => $module_cron_period,
-			))
-			->updateFields(array(
-				'value' => $module_cron_period,
-			))
-			->key('setting', 'module_cron_period')
-			->execute();
+		// Save base currency.
+		// Save date of rates actuality.
+		// Save module updating date.
+		// Save module updating period for cron.
+		$this->config('exchange_rates_custom.settings')
+			->set('base_currency', $base_currency)
+			->set('last_update', $timestamp)
+			->set('last_update_module', $timestamp_now)
+			->set('module_cron_period', $module_cron_period)
+			->save();
 		// Insert/Update rates.
 		foreach ($rates as $code => $rate) {
 			$query->merge('custom_exchange_rates')
@@ -270,15 +236,15 @@ class ExchangeRatesCustomSettingsForm extends ConfigFormBase {
 	 * @param \Drupal\Core\Form\FormStateInterface $form_state
 	 */
 	public function validateForm(array &$form, FormStateInterface $form_state) {
-		$data = new ExchangeRatesCustomController;
-		$drupal_cron_period = $data->get_drupal_cron_period();
+		$exc = new ExchangeRatesCustom;
+		$drupal_cron_period = $exc->get_drupal_cron_period();
 
 		$api_key = $form_state->getValue('api_key');
 		if (strlen($api_key) != 32) {
 			$form_state->setErrorByName('api_key', $this->t('API Key is wrong. The key length must be 32 characters.'));
 		}
 
-		$currency_codes = $data->clear_currency_list($form_state->getValue('currency_codes'));
+		$currency_codes = $exc->clear_currency_list($form_state->getValue('currency_codes'));
 		if ($currency_codes == '') {
 			$form_state->setErrorByName('currency_codes', $this->t('Currency codes field can\'t be empty.'));
 		}
